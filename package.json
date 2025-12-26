@@ -1,0 +1,25 @@
+{
+  "name": "nonbinary",
+  "version": "1.0.0",
+  "description": "Telegram bot with word triggers",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc",
+    "set-webhook": "tsx scripts/set-webhook.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["telegram", "bot", "grammy"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "grammy": "^1.38.4",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@vercel/node": "^5.5.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

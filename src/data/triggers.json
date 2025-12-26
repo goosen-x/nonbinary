@@ -1,0 +1,22 @@
+{
+  "triggers": [
+    {
+      "pattern": "привет",
+      "match": "contains",
+      "response": {
+        "type": "text",
+        "content": "Привет!"
+      },
+      "replyToMessage": true
+    },
+    {
+      "pattern": "пока|до свидания",
+      "match": "regex",
+      "response": {
+        "type": "text",
+        "content": "Пока-пока!"
+      },
+      "replyToMessage": true
+    }
+  ]
+}
