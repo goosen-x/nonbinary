@@ -17,6 +17,15 @@
         "content": "Пока-пока!"
       },
       "replyToMessage": true
+    },
+    {
+      "pattern": "тест",
+      "match": "contains",
+      "response": {
+        "type": "sticker",
+        "content": "CAACAgIAAxkBAAOiaU4nhQqHrBSJi1W4QBvVBsSoj8wAAvF0AAJJfZhJnertjI8QFJg2BA"
+      },
+      "replyToMessage": true
     }
   ]
 }
