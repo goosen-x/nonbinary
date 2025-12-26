@@ -4,21 +4,25 @@ import { Bot } from "grammy";
 const STICKERS = {
   coffee: "CAACAgIAAxkBAAPlaU4wrKcI7TsFFx-tMFcicTPleu8AAptEAAKXKoBIzDrviqIAAXGZNgQ",
   party: "CAACAgIAAxkBAAPTaU4vPbAAAYfVqIPGD8QbX5C61OACAAKNXAACpYUBSD6CwMNL4kHcNgQ",
-  random: [   // массив случайных стикеров
-    // добавь несколько file_id
-  ],
+  // Название стикер-пака для /random (без https://t.me/addstickers/)
+  randomPack: "", // например: "pelosipack" или "HotCherry"
 };
 
 export function setupStickerCommands(bot: Bot): void {
-  // /sticker - получить file_id стикера (ответь на стикер)
+  // /sticker - получить file_id и название пака (ответь на стикер)
   bot.command("sticker", async (ctx) => {
     const reply = ctx.message?.reply_to_message;
     if (reply?.sticker) {
-      await ctx.reply(`<b>Sticker File ID:</b>\n<code>${reply.sticker.file_id}</code>`, {
-        parse_mode: "HTML",
-      });
+      const sticker = reply.sticker;
+      let info = `<b>Sticker Info:</b>\n`;
+      info += `File ID: <code>${sticker.file_id}</code>\n`;
+      if (sticker.set_name) {
+        info += `Pack: <code>${sticker.set_name}</code>\n`;
+        info += `Link: https://t.me/addstickers/${sticker.set_name}`;
+      }
+      await ctx.reply(info, { parse_mode: "HTML" });
     } else {
-      await ctx.reply("Ответь на стикер командой /sticker, чтобы получить его file_id");
+      await ctx.reply("Ответь на стикер командой /sticker, чтобы получить его file_id и название пака");
     }
   });
 
@@ -54,14 +58,30 @@ export function setupStickerCommands(bot: Bot): void {
     await ctx.reply(random);
   });
 
-  // /random - случайный стикер
+  // /random - случайный стикер из пака
   bot.command("random", async (ctx) => {
-    if (STICKERS.random.length === 0) {
-      await ctx.reply("Случайные стикеры не настроены");
+    if (!STICKERS.randomPack) {
+      await ctx.reply("Стикер-пак не настроен. Укажи название пака в коде.");
       return;
     }
-    const random = STICKERS.random[Math.floor(Math.random() * STICKERS.random.length)];
-    await ctx.replyWithSticker(random);
+
+    try {
+      // Получаем все стикеры из пака
+      const stickerSet = await ctx.api.getStickerSet(STICKERS.randomPack);
+      const stickers = stickerSet.stickers;
+
+      if (stickers.length === 0) {
+        await ctx.reply("В паке нет стикеров");
+        return;
+      }
+
+      // Выбираем случайный
+      const randomSticker = stickers[Math.floor(Math.random() * stickers.length)];
+      await ctx.replyWithSticker(randomSticker.file_id);
+    } catch (error) {
+      console.error("Error getting sticker set:", error);
+      await ctx.reply("Не удалось загрузить стикер-пак. Проверь название.");
+    }
   });
 
   // /coffee - стикер кофе
