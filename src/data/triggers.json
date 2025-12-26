@@ -19,7 +19,17 @@
       "replyToMessage": true
     },
     {
-      "patterns": ["негр", "нига", "нигга", "niga", "nigger", "niger"],
+      "patterns": [
+        "негр",
+        "нига",
+        "нигга",
+        "нигер",
+        "ниггер",
+        "niga",
+        "nigga",
+        "nigger",
+        "niger"
+      ],
       "match": "contains",
       "response": {
         "type": "sticker",

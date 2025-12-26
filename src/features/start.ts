@@ -8,7 +8,7 @@ export function setupStartCommand(bot: Bot): void {
     await ctx.reply(
       `Привет, ${name}!\n\n` +
         `Я бот, который реагирует на определённые слова в чате.\n\n` +
-        `Добавь меня в группу, и я буду отвечать на триггерные слова.`
+        `Добавь меня в группу, и я буду отвечать на триггерные слова.`,
     );
   });
 
@@ -18,8 +18,8 @@ export function setupStartCommand(bot: Bot): void {
       `<b>Доступные команды:</b>\n\n` +
         `/start - Приветствие\n` +
         `/help - Справка\n` +
-        `/triggers - Список активных триггеров`,
-      { parse_mode: "HTML" }
+        `/niggers - Список активных ниггеров`,
+      { parse_mode: "HTML" },
     );
   });
 
@@ -32,18 +32,21 @@ export function setupStartCommand(bot: Bot): void {
       });
 
       if (triggers.length === 0) {
-        await ctx.reply("Триггеры не настроены.");
+        await ctx.reply("Ниггеры не настроены.");
         return;
       }
 
       const list = triggers
-        .map((t: { pattern?: string; patterns?: string[]; match: string }, i: number) => {
-          // Показываем pattern или patterns
-          const words = t.patterns
-            ? t.patterns.join(", ")
-            : t.pattern || "—";
-          return `${i + 1}. <code>${words}</code> (${t.match})`;
-        })
+        .map(
+          (
+            t: { pattern?: string; patterns?: string[]; match: string },
+            i: number,
+          ) => {
+            // Показываем pattern или patterns
+            const words = t.patterns ? t.patterns.join(", ") : t.pattern || "—";
+            return `${i + 1}. <code>${words}</code> (${t.match})`;
+          },
+        )
         .join("\n");
 
       await ctx.reply(`<b>Активные триггеры:</b>\n\n${list}`, {
@@ -51,7 +54,7 @@ export function setupStartCommand(bot: Bot): void {
       });
     } catch (error) {
       console.error("Error in /triggers:", error);
-      await ctx.reply("Ошибка при загрузке триггеров.");
+      await ctx.reply("Ошибка при загрузке нигеров.");
     }
   });
 }
