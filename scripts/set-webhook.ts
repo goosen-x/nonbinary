@@ -27,7 +27,6 @@ async function setWebhook(): Promise<void> {
     const webhookUrl = `${WEBHOOK_URL}/api/webhook`;
 
     await bot.api.setWebhook(webhookUrl, {
-      secret_token: WEBHOOK_SECRET,
       allowed_updates: ["message", "callback_query"],
     });
 
