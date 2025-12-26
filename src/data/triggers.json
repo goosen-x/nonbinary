@@ -19,7 +19,7 @@
       "replyToMessage": true
     },
     {
-      "pattern": "тест",
+      "patterns": ["тест", "проверка", "жаба"],
       "match": "contains",
       "response": {
         "type": "sticker",

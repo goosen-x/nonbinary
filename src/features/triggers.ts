@@ -8,7 +8,8 @@ interface TriggerResponse {
 }
 
 interface Trigger {
-  pattern: string;
+  pattern?: string;
+  patterns?: string[];
   match: "exact" | "contains" | "regex";
   response: TriggerResponse;
   replyToMessage: boolean;
@@ -22,12 +23,16 @@ interface TriggerMatch {
   quote?: string; // Точный текст из сообщения для цитирования
 }
 
-// Проверяет, совпадает ли сообщение с паттерном триггера
-function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
+// Проверяет один паттерн
+function matchSinglePattern(
+  text: string,
+  pattern: string,
+  matchType: Trigger["match"]
+): TriggerMatch {
   const lowerText = text.toLowerCase();
-  const lowerPattern = trigger.pattern.toLowerCase();
+  const lowerPattern = pattern.toLowerCase();
 
-  switch (trigger.match) {
+  switch (matchType) {
     case "exact":
       if (lowerText === lowerPattern) {
         return { matched: true, quote: text };
@@ -37,8 +42,7 @@ function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
     case "contains": {
       const index = lowerText.indexOf(lowerPattern);
       if (index !== -1) {
-        // Извлекаем точный текст из оригинального сообщения (с оригинальным регистром)
-        const quote = text.substring(index, index + trigger.pattern.length);
+        const quote = text.substring(index, index + pattern.length);
         return { matched: true, quote };
       }
       return { matched: false };
@@ -46,20 +50,44 @@ function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
 
     case "regex":
       try {
-        const regex = new RegExp(trigger.pattern, "i");
+        const regex = new RegExp(pattern, "i");
         const match = text.match(regex);
         if (match) {
           return { matched: true, quote: match[0] };
         }
         return { matched: false };
       } catch {
-        console.error(`Invalid regex pattern: ${trigger.pattern}`);
+        console.error(`Invalid regex pattern: ${pattern}`);
         return { matched: false };
       }
 
     default:
       return { matched: false };
   }
+}
+
+// Проверяет, совпадает ли сообщение с паттерном триггера
+function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
+  // Собираем все паттерны в один массив
+  const patterns: string[] = [];
+
+  if (trigger.pattern) {
+    patterns.push(trigger.pattern);
+  }
+
+  if (trigger.patterns) {
+    patterns.push(...trigger.patterns);
+  }
+
+  // Проверяем каждый паттерн
+  for (const pattern of patterns) {
+    const result = matchSinglePattern(text, pattern, trigger.match);
+    if (result.matched) {
+      return result;
+    }
+  }
+
+  return { matched: false };
 }
 
 // Отправляет ответ на триггер
