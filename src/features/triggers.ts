@@ -16,39 +16,65 @@ interface Trigger {
 
 const triggers: Trigger[] = triggersData.triggers as Trigger[];
 
+// Результат матчинга триггера
+interface TriggerMatch {
+  matched: boolean;
+  quote?: string; // Точный текст из сообщения для цитирования
+}
+
 // Проверяет, совпадает ли сообщение с паттерном триггера
-function matchTrigger(text: string, trigger: Trigger): boolean {
+function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
   const lowerText = text.toLowerCase();
   const lowerPattern = trigger.pattern.toLowerCase();
 
   switch (trigger.match) {
     case "exact":
-      return lowerText === lowerPattern;
+      if (lowerText === lowerPattern) {
+        return { matched: true, quote: text };
+      }
+      return { matched: false };
 
-    case "contains":
-      return lowerText.includes(lowerPattern);
+    case "contains": {
+      const index = lowerText.indexOf(lowerPattern);
+      if (index !== -1) {
+        // Извлекаем точный текст из оригинального сообщения (с оригинальным регистром)
+        const quote = text.substring(index, index + trigger.pattern.length);
+        return { matched: true, quote };
+      }
+      return { matched: false };
+    }
 
     case "regex":
       try {
         const regex = new RegExp(trigger.pattern, "i");
-        return regex.test(text);
+        const match = text.match(regex);
+        if (match) {
+          return { matched: true, quote: match[0] };
+        }
+        return { matched: false };
       } catch {
         console.error(`Invalid regex pattern: ${trigger.pattern}`);
-        return false;
+        return { matched: false };
       }
 
     default:
-      return false;
+      return { matched: false };
   }
 }
 
 // Отправляет ответ на триггер
 async function sendTriggerResponse(
   ctx: Context,
-  trigger: Trigger
+  trigger: Trigger,
+  quote?: string
 ): Promise<void> {
   const replyOptions = trigger.replyToMessage
-    ? { reply_parameters: { message_id: ctx.message!.message_id } }
+    ? {
+        reply_parameters: {
+          message_id: ctx.message!.message_id,
+          quote: quote, // Цитируем конкретное слово
+        },
+      }
     : {};
 
   switch (trigger.response.type) {
@@ -78,8 +104,9 @@ export function setupTriggers(bot: Bot): void {
 
     // Ищем совпадение с триггерами
     for (const trigger of triggers) {
-      if (matchTrigger(text, trigger)) {
-        await sendTriggerResponse(ctx, trigger);
+      const match = matchTrigger(text, trigger);
+      if (match.matched) {
+        await sendTriggerResponse(ctx, trigger, match.quote);
         // Можно раскомментировать, если нужен только первый триггер
         // break;
       }
