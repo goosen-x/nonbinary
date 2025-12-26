@@ -25,22 +25,33 @@ export function setupStartCommand(bot: Bot): void {
 
   // Команда /triggers - показать список триггеров
   bot.command("triggers", async (ctx) => {
-    // Импортируем триггеры динамически чтобы избежать циклических зависимостей
-    const { triggers } = await import("../data/triggers.json", {
-      with: { type: "json" },
-    });
+    try {
+      // Импортируем триггеры динамически
+      const { triggers } = await import("../data/triggers.json", {
+        with: { type: "json" },
+      });
 
-    if (triggers.length === 0) {
-      await ctx.reply("Триггеры не настроены.");
-      return;
+      if (triggers.length === 0) {
+        await ctx.reply("Триггеры не настроены.");
+        return;
+      }
+
+      const list = triggers
+        .map((t: { pattern?: string; patterns?: string[]; match: string }, i: number) => {
+          // Показываем pattern или patterns
+          const words = t.patterns
+            ? t.patterns.join(", ")
+            : t.pattern || "—";
+          return `${i + 1}. <code>${words}</code> (${t.match})`;
+        })
+        .join("\n");
+
+      await ctx.reply(`<b>Активные триггеры:</b>\n\n${list}`, {
+        parse_mode: "HTML",
+      });
+    } catch (error) {
+      console.error("Error in /triggers:", error);
+      await ctx.reply("Ошибка при загрузке триггеров.");
     }
-
-    const list = triggers
-      .map((t, i) => `${i + 1}. <code>${t.pattern}</code> (${t.match})`)
-      .join("\n");
-
-    await ctx.reply(`<b>Активные триггеры:</b>\n\n${list}`, {
-      parse_mode: "HTML",
-    });
   });
 }
