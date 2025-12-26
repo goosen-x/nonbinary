@@ -7,8 +7,8 @@ export function setupStartCommand(bot: Bot): void {
 
     await ctx.reply(
       `Привет, ${name}!\n\n` +
-        `Я бот, который реагирует на определённые слова в чате.\n\n` +
-        `Добавь меня в группу, и я буду отвечать на триггерные слова.`,
+        `А ты крутой парень.\n\n` +
+        `В этом чате мы против расизма`,
     );
   });
 
@@ -16,9 +16,15 @@ export function setupStartCommand(bot: Bot): void {
   bot.command("help", async (ctx) => {
     await ctx.reply(
       `<b>Доступные команды:</b>\n\n` +
-        `/start - Приветствие\n` +
-        `/help - Справка\n` +
-        `/niggers - Список активных ниггеров`,
+        `/start - Начать\n` +
+        `/help - Помощь\n` +
+        `/sticker - Получить file_id стикера\n` +
+        `/emoji - Случайный эмодзи\n` +
+        `/random - Случайный стикер\n` +
+        `/coffee - Стикер кофе\n` +
+        `/party - Праздничный стикер\n` +
+        `/mode - Режим работы\n` +
+        `/triggers - Список триггеров`,
       { parse_mode: "HTML" },
     );
   });
@@ -32,7 +38,7 @@ export function setupStartCommand(bot: Bot): void {
       });
 
       if (triggers.length === 0) {
-        await ctx.reply("Ниггеры не настроены.");
+        await ctx.reply("Триггеры не настроены.");
         return;
       }
 
@@ -54,7 +60,7 @@ export function setupStartCommand(bot: Bot): void {
       });
     } catch (error) {
       console.error("Error in /triggers:", error);
-      await ctx.reply("Ошибка при загрузке нигеров.");
+      await ctx.reply("Ошибка при загрузке триггеров.");
     }
   });
 }
