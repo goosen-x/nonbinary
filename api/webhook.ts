@@ -3,9 +3,7 @@ import { webhookCallback } from "grammy";
 import { bot } from "../src/bot/index.js";
 
 // Создаём handler для Vercel
-const handleUpdate = webhookCallback(bot, "std/http", {
-  secretToken: process.env.WEBHOOK_SECRET,
-});
+const handleUpdate = webhookCallback(bot, "std/http");
 
 export default async function handler(
   req: VercelRequest,
