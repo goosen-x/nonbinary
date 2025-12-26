@@ -1,9 +1,9 @@
 import { Bot } from "grammy";
 
-// Стикеры для команд (замени на свои file_id)
+// Стикеры для команд
 const STICKERS = {
   coffee: "", // добавь file_id стикера кофе
-  party: "",  // добавь file_id праздничного стикера
+  party: "CAACAgIAAxkBAAPTaU4vPbAAAYfVqIPGD8QbX5C61OACAAKNXAACpYUBSD6CwMNL4kHcNgQ",
   random: [   // массив случайных стикеров
     // добавь несколько file_id
   ],
