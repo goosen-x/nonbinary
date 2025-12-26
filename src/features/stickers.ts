@@ -10,16 +10,41 @@ const STICKERS = {
 };
 
 export function setupStickerCommands(bot: Bot): void {
-  // /sticker - отправить стикер (нужен reply на стикер)
+  // /sticker - получить file_id стикера (ответь на стикер)
   bot.command("sticker", async (ctx) => {
     const reply = ctx.message?.reply_to_message;
     if (reply?.sticker) {
-      await ctx.reply(`File ID: <code>${reply.sticker.file_id}</code>`, {
+      await ctx.reply(`<b>Sticker File ID:</b>\n<code>${reply.sticker.file_id}</code>`, {
         parse_mode: "HTML",
       });
     } else {
       await ctx.reply("Ответь на стикер командой /sticker, чтобы получить его file_id");
     }
+  });
+
+  // /emoji - получить custom_emoji_id (ответь на сообщение с кастомным эмодзи)
+  bot.command("emojiid", async (ctx) => {
+    const reply = ctx.message?.reply_to_message;
+    if (!reply) {
+      await ctx.reply("Ответь на сообщение с кастомным эмодзи командой /emojiid");
+      return;
+    }
+
+    const entities = reply.entities || reply.caption_entities || [];
+    const customEmojis = entities.filter((e) => e.type === "custom_emoji");
+
+    if (customEmojis.length === 0) {
+      await ctx.reply("В сообщении нет кастомных эмодзи (только Premium эмодзи имеют ID)");
+      return;
+    }
+
+    const ids = customEmojis
+      .map((e) => `<code>${(e as { custom_emoji_id: string }).custom_emoji_id}</code>`)
+      .join("\n");
+
+    await ctx.reply(`<b>Custom Emoji IDs:</b>\n${ids}`, {
+      parse_mode: "HTML",
+    });
   });
 
   // /emoji - отправить эмодзи

@@ -19,6 +19,7 @@ export function setupStartCommand(bot: Bot): void {
         `/start - Начать\n` +
         `/help - Помощь\n` +
         `/sticker - Получить file_id стикера\n` +
+        `/emojiid - Получить custom_emoji_id\n` +
         `/emoji - Случайный эмодзи\n` +
         `/random - Случайный стикер\n` +
         `/coffee - Стикер кофе\n` +
