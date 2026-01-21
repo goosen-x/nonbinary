@@ -5,9 +5,10 @@
       "match": "contains",
       "response": {
         "type": "text",
-        "content": "Привет!"
+        "content": "Привет! Как жизнь?"
       },
-      "replyToMessage": true
+      "replyToMessage": true,
+      "probability": 0.1
     },
     {
       "pattern": "пока|до свидания",
@@ -16,7 +17,8 @@
         "type": "text",
         "content": "Пока-пока!"
       },
-      "replyToMessage": true
+      "replyToMessage": true,
+      "probability": 0.1
     },
     {
       "patterns": [
@@ -35,7 +37,8 @@
         "type": "sticker",
         "content": "CAACAgIAAxkBAAOiaU4nhQqHrBSJi1W4QBvVBsSoj8wAAvF0AAJJfZhJnertjI8QFJg2BA"
       },
-      "replyToMessage": true
+      "replyToMessage": true,
+      "probability": 1
     }
   ]
 }

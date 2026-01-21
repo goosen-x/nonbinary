@@ -13,6 +13,7 @@ interface Trigger {
   match: "exact" | "contains" | "regex";
   response: TriggerResponse;
   replyToMessage: boolean;
+  probability?: number;
 }
 
 const triggers: Trigger[] = triggersData.triggers as Trigger[];
@@ -134,7 +135,13 @@ export function setupTriggers(bot: Bot): void {
     for (const trigger of triggers) {
       const match = matchTrigger(text, trigger);
       if (match.matched) {
-        await sendTriggerResponse(ctx, trigger, match.quote);
+        // Проверяем вероятность ответа
+        const probability = trigger.probability ?? 1; // По умолчанию 100%
+        const random = Math.random();
+        
+        if (random <= probability) {
+          await sendTriggerResponse(ctx, trigger, match.quote);
+        }
         // Можно раскомментировать, если нужен только первый триггер
         // break;
       }

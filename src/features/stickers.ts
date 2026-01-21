@@ -5,7 +5,7 @@ const STICKERS = {
   coffee: "CAACAgIAAxkBAAPlaU4wrKcI7TsFFx-tMFcicTPleu8AAptEAAKXKoBIzDrviqIAAXGZNgQ",
   party: "CAACAgIAAxkBAAPTaU4vPbAAAYfVqIPGD8QbX5C61OACAAKNXAACpYUBSD6CwMNL4kHcNgQ",
   // Название стикер-пака для /random (без https://t.me/addstickers/)
-  randomPack: "", // например: "pelosipack" или "HotCherry"
+  randomPack: "nonbinarypersons",
 };
 
 export function setupStickerCommands(bot: Bot): void {
