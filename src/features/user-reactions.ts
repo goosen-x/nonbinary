@@ -6,7 +6,16 @@ export function setupUserReactions(bot: Bot): void {
     const username = ctx.from?.username;
 
     if (username === "djbitchplease") {
-      await ctx.reply("пэпэ");
+      const probability = 0.3;
+      const random = Math.random();
+
+      if (random <= 0.05) {
+        await ctx.reply("пэпэ");
+      }
+
+      if (random <= 0.01) {
+        await ctx.reply("Миш, хватит стату набивать");
+      }
     }
 
     await next();
