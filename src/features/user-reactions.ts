@@ -7,9 +7,9 @@ export function setupUserReactions(bot: Bot): void {
     const random = Math.random();
 
     // Специальные реакции для конкретных пользователей (приоритет)
-    if (username === "mputsman2" && random <= 0.01) {
+    if (username === "mputsman2" && random <= 0.003) {
       await ctx.reply("Миш, хватит стату набивать");
-    } else if (random <= 0.05) {
+    } else if (random <= 0.01) {
       // Общая реакция для всех
       await ctx.reply("пэпэ");
     }
