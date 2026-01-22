@@ -4,7 +4,7 @@
   "description": "Telegram bot with word triggers",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "tsx scripts/dev.ts",
     "build": "tsc",
     "set-webhook": "tsx scripts/set-webhook.ts",
     "typecheck": "tsc --noEmit"
