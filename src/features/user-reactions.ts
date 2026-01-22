@@ -6,14 +6,12 @@ export function setupUserReactions(bot: Bot): void {
     const username = ctx.from?.username;
     const random = Math.random();
 
-    if (random <= 0.05) {
+    // Специальные реакции для конкретных пользователей (приоритет)
+    if (username === "mputsman2" && random <= 0.01) {
+      await ctx.reply("Миш, хватит стату набивать");
+    } else if (random <= 0.05) {
+      // Общая реакция для всех
       await ctx.reply("пэпэ");
-    }
-
-    if (username === "mputsman2") {
-      if (random <= 0.01) {
-        await ctx.reply("Миш, хватит стату набивать");
-      }
     }
 
     await next();
