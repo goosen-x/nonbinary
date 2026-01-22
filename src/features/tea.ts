@@ -1,19 +1,24 @@
 import { Bot, Context } from "grammy";
 
 const STICKERS = {
-  teaOffer: "CAACAgIAAx0Cb6dRdQABBJt8aWiY8ekuiPMBrGGfvqZwBjH9MuoAAhMAA_NjxCxGtrpj9M9i7TgE",
-  teaReady: "CAACAgIAAx0Cb6dRdQABBJt9aWiY9igbynRHen9DhkbEryNmRTgAAhQAA_NjxCw3vV20SVxXKzgE",
+  teaOffer:
+    "CAACAgIAAx0Cb6dRdQABBJt8aWiY8ekuiPMBrGGfvqZwBjH9MuoAAhMAA_NjxCxGtrpj9M9i7TgE",
+  teaReady:
+    "CAACAgIAAx0Cb6dRdQABBJt9aWiY9igbynRHen9DhkbEryNmRTgAAhQAA_NjxCw3vV20SVxXKzgE",
 };
 
 // Хранилище активных ожиданий: chatId -> { timeoutId, messageId }
-const pendingTea = new Map<number, { timeoutId: NodeJS.Timeout; messageId: number }>();
+const pendingTea = new Map<
+  number,
+  { timeoutId: NodeJS.Timeout; messageId: number }
+>();
 
 export function setupTeaFeature(bot: Bot): void {
   // Триггер на слово "йцуке"
   bot.on("message:text", async (ctx, next) => {
     const text = ctx.message.text.toLowerCase();
 
-    if (text.includes("йцуке")) {
+    if (text.includes("чай")) {
       const chatId = ctx.chat.id;
 
       // Отправляем первый стикер (предложение чая)
@@ -23,7 +28,7 @@ export function setupTeaFeature(bot: Bot): void {
         },
       });
 
-      // Устанавливаем таймер на 30 секунд
+      // Устанавливаем таймер на 20 секунд
       const timeoutId = setTimeout(async () => {
         // Если таймер сработал, значит никто не ответил "нет"
         pendingTea.delete(chatId);
@@ -33,7 +38,7 @@ export function setupTeaFeature(bot: Bot): void {
         } catch (error) {
           console.error("Error sending tea ready sticker:", error);
         }
-      }, 30000);
+      }, 20000);
 
       // Сохраняем состояние ожидания
       pendingTea.set(chatId, {
