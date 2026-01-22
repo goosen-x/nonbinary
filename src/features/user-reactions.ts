@@ -10,12 +10,6 @@ export function setupUserReactions(bot: Bot): void {
       await ctx.reply("пэпэ");
     }
 
-    if (username === "djbitchplease") {
-      if (random <= 0.05) {
-        await ctx.reply("пэпэ");
-      }
-    }
-
     if (username === "mputsman2") {
       if (random <= 0.01) {
         await ctx.reply("Миш, хватит стату набивать");
