@@ -9,15 +9,9 @@ export function setupDiceGame(bot: Bot): void {
     const userValue = ctx.message.dice.value;
     const userName = ctx.from?.first_name || "Игрок";
 
-    // Ждём анимацию кубика пользователя
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Бот бросает свой кубик
+    // Бот бросает свой кубик (анимация происходит на клиенте)
     const botRoll = await ctx.replyWithDice("🎲");
     const botValue = botRoll.dice?.value || 0;
-
-    // Ждём анимацию кубика бота
-    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Определяем победителя
     let message: string;
