@@ -28,6 +28,7 @@ async function setWebhook(): Promise<void> {
 
     await bot.api.setWebhook(webhookUrl, {
       allowed_updates: ["message", "callback_query"],
+      drop_pending_updates: true, // Сбрасываем накопленные updates
     });
 
     console.log(`Webhook set to: ${webhookUrl}`);
