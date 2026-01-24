@@ -3,6 +3,11 @@ import { Bot } from "grammy";
 export function setupUserReactions(bot: Bot): void {
   // Реакция на сообщения от конкретного пользователя
   bot.on("message", async (ctx, next) => {
+    // Игнорируем сообщения от ботов (включая самого себя)
+    if (ctx.from?.is_bot) {
+      return next();
+    }
+
     const username = ctx.from?.username;
     const random = Math.random();
 
