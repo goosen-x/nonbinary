@@ -17,6 +17,7 @@ const commands = [
   { command: "random", description: "Случайный стикер" },
   { command: "coffee", description: "Стикер кофе" },
   { command: "party", description: "Праздничный стикер" },
+  { command: "roulette", description: "Русская рулетка" },
   { command: "mode", description: "Режим работы" },
   { command: "triggers", description: "Список триггеров" },
 ];

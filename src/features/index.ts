@@ -3,6 +3,7 @@ import { setupStartCommand } from "./start.js";
 import { setupTriggers } from "./triggers.js";
 import { setupStickerCommands } from "./stickers.js";
 import { setupDiceGame } from "./dice.js";
+import { setupRoulette } from "./roulette.js";
 import { setupUserReactions } from "./user-reactions.js";
 
 export function setupFeatures(bot: Bot): void {
@@ -14,6 +15,9 @@ export function setupFeatures(bot: Bot): void {
 
   // Игра в кубик
   setupDiceGame(bot);
+
+  // Русская рулетка
+  setupRoulette(bot);
 
   // Реакции на конкретных пользователей
   setupUserReactions(bot);

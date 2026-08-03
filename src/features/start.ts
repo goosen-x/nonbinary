@@ -24,6 +24,7 @@ export function setupStartCommand(bot: Bot): void {
         `/random - Случайный стикер\n` +
         `/coffee - Стикер кофе\n` +
         `/party - Праздничный стикер\n` +
+        `/roulette - Русская рулетка\n` +
         `/mode - Режим работы\n` +
         `/triggers - Список триггеров`,
       { parse_mode: "HTML" },
