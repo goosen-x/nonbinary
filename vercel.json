@@ -1,6 +1,7 @@
 {
   "buildCommand": "",
   "outputDirectory": "",
+  "regions": ["fra1"],
   "functions": {
     "api/webhook.ts": {
       "maxDuration": 10
