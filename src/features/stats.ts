@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, Context } from "grammy";
 import { Redis } from "@upstash/redis";
 import { redisConfig } from "../config/index.js";
 
@@ -13,11 +13,45 @@ const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
 // Храним ключ недели 35 дней — хватит, чтобы показать прошлую неделю
 const WEEK_TTL_SECONDS = 35 * 24 * 60 * 60;
 const TOP_LIMIT = 10;
-const STATS_TRIGGER = /кто\s+больше\s+всех\s+пизд/i;
+
+// Отчёты: фраза-триггер → недельный счётчик с этим префиксом ключа
+const REPORTS = [
+  {
+    trigger: /кто\s+больше\s+всех\s+пизд/i,
+    prefix: "stats",
+    header: "Люди без личной жизни за неделю",
+    empty: "За прошлую неделю статистики нет. Все занимались личной жизнью.",
+  },
+  {
+    trigger: /кто\s+больше\s+всех\s+расист/i,
+    prefix: "racism",
+    header: "Топ расистов за неделю",
+    empty: "За прошлую неделю расистов не замечено. Так держать!",
+  },
+];
 
 interface StoredUser {
   name: string;
   username?: string;
+}
+
+// Инкремент недельного счётчика (используется и триггерами, см. triggers.ts)
+export async function trackWeeklyStat(
+  prefix: string,
+  ctx: Context,
+): Promise<void> {
+  if (!redis || !ctx.from || !ctx.chat || !ctx.message) return;
+
+  const key = `${prefix}:${ctx.chat.id}:${weekKey(mondayOf(ctx.message.date))}`;
+  try {
+    await redis
+      .pipeline()
+      .hincrby(key, String(ctx.from.id), 1)
+      .expire(key, WEEK_TTL_SECONDS)
+      .exec();
+  } catch (error) {
+    console.error(`Stat "${prefix}" increment error:`, error);
+  }
 }
 
 // Понедельник недели, в которую попадает момент времени (по МСК)
@@ -82,9 +116,10 @@ export function setupStats(bot: Bot): void {
     await next();
   });
 
-  // «кто больше всех пиздит» — топ болтунов за прошлую неделю
+  // Фразы-запросы статистики — топ за прошлую неделю
   bot.on("message:text", async (ctx, next) => {
-    if (!STATS_TRIGGER.test(ctx.message.text)) return next();
+    const report = REPORTS.find((r) => r.trigger.test(ctx.message.text));
+    if (!report) return next();
 
     const thisMonday = mondayOf(ctx.message.date);
     const prevMonday = addDays(thisMonday, -7);
@@ -93,15 +128,13 @@ export function setupStats(bot: Bot): void {
     try {
       const [counts, users] = await Promise.all([
         db.hgetall<Record<string, number>>(
-          `stats:${ctx.chat.id}:${weekKey(prevMonday)}`,
+          `${report.prefix}:${ctx.chat.id}:${weekKey(prevMonday)}`,
         ),
         db.hgetall<Record<string, StoredUser>>(`users:${ctx.chat.id}`),
       ]);
 
       if (!counts || Object.keys(counts).length === 0) {
-        await ctx.reply(
-          "За прошлую неделю статистики нет. Все занимались личной жизнью.",
-        );
+        await ctx.reply(report.empty);
         return;
       }
 
@@ -118,7 +151,7 @@ export function setupStats(bot: Bot): void {
       });
 
       await ctx.reply(
-        `Люди без личной жизни за неделю ${fmtDate(prevMonday)} - ${fmtDate(prevSunday)}\n` +
+        `${report.header} ${fmtDate(prevMonday)} - ${fmtDate(prevSunday)}\n` +
           lines.join("\n"),
       );
     } catch (error) {

@@ -1,5 +1,6 @@
 import { Bot, Context } from "grammy";
 import triggersData from "../data/triggers.json" with { type: "json" };
+import { trackWeeklyStat } from "./stats.js";
 
 // Типы для триггеров
 interface TriggerResponse {
@@ -14,6 +15,8 @@ interface Trigger {
   response: TriggerResponse;
   replyToMessage: boolean;
   probability?: number;
+  // Префикс недельного счётчика в Redis — считаем срабатывания по пользователям
+  stats?: string;
 }
 
 const triggers: Trigger[] = triggersData.triggers as Trigger[];
@@ -22,6 +25,10 @@ const triggers: Trigger[] = triggersData.triggers as Trigger[];
 interface TriggerMatch {
   matched: boolean;
   quote?: string; // Точный текст из сообщения для цитирования
+}
+
+function isWordChar(ch: string | undefined): boolean {
+  return !!ch && /[0-9a-zа-яё]/i.test(ch);
 }
 
 // Проверяет один паттерн
@@ -41,7 +48,12 @@ function matchSinglePattern(
       return { matched: false };
 
     case "contains": {
-      const index = lowerText.indexOf(lowerPattern);
+      // Паттерн должен стоять в начале слова: «негра» матчится, «книга» — нет.
+      // Окончания слова после паттерна допускаем, чтобы ловить словоформы.
+      let index = lowerText.indexOf(lowerPattern);
+      while (index > 0 && isWordChar(lowerText[index - 1])) {
+        index = lowerText.indexOf(lowerPattern, index + 1);
+      }
       if (index !== -1) {
         const quote = text.substring(index, index + pattern.length);
         return { matched: true, quote };
@@ -135,6 +147,11 @@ export function setupTriggers(bot: Bot): void {
     for (const trigger of triggers) {
       const match = matchTrigger(text, trigger);
       if (match.matched) {
+        // Слово сказано — считаем в статистику независимо от того, ответим ли
+        if (trigger.stats) {
+          await trackWeeklyStat(trigger.stats, ctx);
+        }
+
         // Проверяем вероятность ответа
         const probability = trigger.probability ?? 1; // По умолчанию 100%
         const random = Math.random();
