@@ -1,6 +1,8 @@
 import { Bot, Context } from "grammy";
 import { Redis } from "@upstash/redis";
-import { redisConfig } from "../config/index.js";
+import { env, redisConfig } from "../config/index.js";
+import triggersData from "../data/triggers.json" with { type: "json" };
+import { Matchable, matchTrigger } from "../lib/matching.js";
 import {
   WEEK_TTL_SECONDS,
   mondayOf,
@@ -38,6 +40,14 @@ interface StoredUser {
   username?: string;
 }
 
+// Триггеры со включённым счётчиком (сейчас — racism), для бэкфила пересылкой
+const statTriggers = (
+  triggersData.triggers as Array<Matchable & { stats?: string }>
+).filter((t) => t.stats);
+
+// Кому разрешён бэкфил пересылкой в личку
+const BACKFILL_ADMIN_IDS = new Set<number>([...env.BOT_ADMINS, 204887498]);
+
 // Инкремент недельного счётчика (используется и триггерами, см. triggers.ts)
 export async function trackWeeklyStat(
   prefix: string,
@@ -71,6 +81,11 @@ export function setupStats(bot: Bot): void {
     const from = ctx.from;
     if (!from || from.is_bot) return next();
 
+    // Пересылки в личку — это бэкфил, их считает отдельный обработчик ниже
+    if (ctx.chat.type === "private" && ctx.message.forward_origin) {
+      return next();
+    }
+
     const statsKey = `stats:${ctx.chat.id}:${weekKey(mondayOf(ctx.message.date))}`;
     const user: StoredUser = {
       name: [from.first_name, from.last_name].filter(Boolean).join(" "),
@@ -90,6 +105,101 @@ export function setupStats(bot: Bot): void {
     }
 
     await next();
+  });
+
+  // Бэкфил: админ пересылает боту в личку сообщения из группы —
+  // раскладываем по авторам и неделям по оригинальной дате пересылки.
+  // Текущую неделю пропускаем: её бот считает сам, иначе будут дубли.
+  let backfillGroupId: number | null = null;
+
+  async function detectGroupChatId(): Promise<number | null> {
+    if (backfillGroupId !== null) return backfillGroupId;
+    const ids = new Set<number>();
+    let cursor = "0";
+    do {
+      const [next, keys] = await db.scan(cursor, {
+        match: "stats:*",
+        count: 100,
+      });
+      cursor = String(next);
+      for (const key of keys) {
+        const id = Number(key.split(":")[1]);
+        if (id < 0) ids.add(id); // группы — отрицательные id
+      }
+    } while (cursor !== "0");
+    if (ids.size === 1) backfillGroupId = [...ids][0];
+    return backfillGroupId;
+  }
+
+  bot.on("message", async (ctx, next) => {
+    if (ctx.chat.type !== "private") return next();
+    const origin = ctx.message.forward_origin;
+    if (!origin) return next();
+    if (!ctx.from || !BACKFILL_ADMIN_IDS.has(ctx.from.id)) return;
+
+    try {
+      const groupId = await detectGroupChatId();
+      if (!groupId) {
+        await ctx.reply(
+          "Не понял, в какую группу писать: пусть в группе с ботом сначала кто-нибудь напишет.",
+        );
+        return;
+      }
+
+      const week = weekKey(mondayOf(origin.date));
+      if (week >= weekKey(mondayOf(ctx.message.date))) {
+        return; // текущая неделя — живой счёт, пропускаем молча
+      }
+
+      let uid: string;
+      let name: string | null = null;
+      if (origin.type === "user") {
+        uid = String(origin.sender_user.id);
+        name = [origin.sender_user.first_name, origin.sender_user.last_name]
+          .filter(Boolean)
+          .join(" ");
+      } else if (origin.type === "hidden_user") {
+        // Автор скрыл аккаунт в настройках приватности — есть только имя
+        uid = `hidden:${origin.sender_user_name}`;
+      } else {
+        return; // пересылки из каналов не считаем
+      }
+
+      const text = ctx.message.text ?? ctx.message.caption ?? "";
+
+      const pipeline = db.pipeline();
+      pipeline.incr(`backfill:${groupId}`);
+      pipeline.expire(`backfill:${groupId}`, 24 * 60 * 60);
+      const statsKey = `stats:${groupId}:${week}`;
+      pipeline.hincrby(statsKey, uid, 1);
+      pipeline.expire(statsKey, WEEK_TTL_SECONDS);
+      if (name) {
+        // Живые данные точнее (в них есть username) — не перетираем
+        pipeline.hsetnx(`users:${groupId}`, uid, JSON.stringify({ name }));
+      }
+      if (text && !text.startsWith("/")) {
+        for (const trigger of statTriggers) {
+          if (matchTrigger(text, trigger).matched) {
+            const key = `${trigger.stats}:${groupId}:${week}`;
+            pipeline.hincrby(key, uid, 1);
+            pipeline.expire(key, WEEK_TTL_SECONDS);
+          }
+        }
+      }
+      const results = await pipeline.exec();
+
+      const received = Number(results[0]);
+      if (received === 1) {
+        await ctx.reply(
+          "Начал приём бэкфила. Пересылай пачками, я отчитаюсь на каждой сотне. Один и тот же кусок дважды не пересылай — задвоится.",
+        );
+      } else if (received % 100 === 0) {
+        await ctx.reply(`Принято ${received} сообщений`);
+      }
+    } catch (error) {
+      console.error("Backfill error:", error);
+      await ctx.reply("Ошибка при записи бэкфила, глянь логи.");
+    }
   });
 
   // Фразы-запросы статистики — топ за прошлую неделю
@@ -120,6 +230,10 @@ export function setupStats(bot: Bot): void {
         .slice(0, TOP_LIMIT);
 
       const lines = top.map((row, i) => {
+        // Авторы со скрытым аккаунтом (из бэкфила) хранятся как hidden:{имя}
+        if (row.userId.startsWith("hidden:")) {
+          return `${i + 1}. ${row.userId.slice("hidden:".length)} - ${row.count}`;
+        }
         const user = users?.[row.userId];
         const name = user?.name || `id${row.userId}`;
         const label = user?.username ? `${name} (${user.username})` : name;
