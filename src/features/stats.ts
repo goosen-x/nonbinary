@@ -154,6 +154,9 @@ export function setupStats(bot: Bot): void {
       let uid: string;
       let name: string | null = null;
       if (origin.type === "user") {
+        if (origin.sender_user.is_bot) {
+          return; // сообщения ботов (включая наши ответы) не считаем
+        }
         uid = String(origin.sender_user.id);
         name = [origin.sender_user.first_name, origin.sender_user.last_name]
           .filter(Boolean)
