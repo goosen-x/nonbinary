@@ -1,18 +1,12 @@
 import { Bot } from "grammy";
 import { Redis } from "@upstash/redis";
-import { env } from "../config/index.js";
+import { redisConfig } from "../config/index.js";
 
 // Статистика сообщений в Upstash Redis:
 // stats:{chatId}:{понедельник недели} — hash: userId → счётчик за неделю
 // users:{chatId} — hash: userId → { name, username } для отображения в топе
 
-const redis =
-  env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: env.UPSTASH_REDIS_REST_URL,
-        token: env.UPSTASH_REDIS_REST_TOKEN,
-      })
-    : null;
+const redis = redisConfig ? new Redis(redisConfig) : null;
 
 // Недели считаем по Москве (UTC+3)
 const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
