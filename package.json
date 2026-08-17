@@ -9,10 +9,15 @@
     "set-webhook": "tsx scripts/set-webhook.ts",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["telegram", "bot", "grammy"],
+  "keywords": [
+    "telegram",
+    "bot",
+    "grammy"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@upstash/redis": "^1.38.2",
     "grammy": "^1.38.4",
     "zod": "^4.2.1"
   },
