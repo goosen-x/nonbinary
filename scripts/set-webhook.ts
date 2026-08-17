@@ -29,6 +29,9 @@ async function setWebhook(): Promise<void> {
     await bot.api.setWebhook(webhookUrl, {
       allowed_updates: ["message", "callback_query"],
       drop_pending_updates: true, // Сбрасываем накопленные updates
+      // Telegram будет слать этот секрет в заголовке X-Telegram-Bot-Api-Secret-Token,
+      // а webhookCallback в api/webhook.ts — проверять его
+      secret_token: WEBHOOK_SECRET,
     });
 
     console.log(`Webhook set to: ${webhookUrl}`);

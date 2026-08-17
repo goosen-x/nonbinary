@@ -5,17 +5,26 @@ import { setupFeatures } from "../features/index.js";
 // Создаём бота
 export const bot = new Bot(env.BOT_TOKEN);
 
-// Дедупликация update_id (защита от повторной обработки)
-let lastUpdateId = 0;
+// Дедупликация update_id — best-effort: работает только внутри одного
+// тёплого инстанса, при холодном старте память пустая. Основная защита
+// от дублей — быстрый ответ 200 в api/webhook.ts, чтобы Telegram не ретраил.
+const seenUpdateIds = new Set<number>();
+const MAX_SEEN_UPDATES = 1000;
 bot.use(async (ctx, next) => {
   const updateId = ctx.update.update_id;
 
-  if (updateId <= lastUpdateId) {
+  if (seenUpdateIds.has(updateId)) {
     console.log(`Skipping duplicate update ${updateId}`);
     return; // Пропускаем уже обработанный update
   }
 
-  lastUpdateId = updateId;
+  seenUpdateIds.add(updateId);
+  if (seenUpdateIds.size > MAX_SEEN_UPDATES) {
+    // Set хранит порядок вставки — удаляем самый старый
+    const oldest = seenUpdateIds.values().next().value;
+    if (oldest !== undefined) seenUpdateIds.delete(oldest);
+  }
+
   await next();
 });
 
