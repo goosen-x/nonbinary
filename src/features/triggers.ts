@@ -1,5 +1,6 @@
 import { Bot, Context } from "grammy";
 import triggersData from "../data/triggers.json" with { type: "json" };
+import { matchTrigger, MatchType } from "../lib/matching.js";
 import { trackWeeklyStat } from "./stats.js";
 
 // Типы для триггеров
@@ -11,7 +12,7 @@ interface TriggerResponse {
 interface Trigger {
   pattern?: string;
   patterns?: string[];
-  match: "exact" | "contains" | "regex";
+  match: MatchType;
   response: TriggerResponse;
   replyToMessage: boolean;
   probability?: number;
@@ -21,93 +22,11 @@ interface Trigger {
 
 const triggers: Trigger[] = triggersData.triggers as Trigger[];
 
-// Результат матчинга триггера
-interface TriggerMatch {
-  matched: boolean;
-  quote?: string; // Точный текст из сообщения для цитирования
-}
-
-function isWordChar(ch: string | undefined): boolean {
-  return !!ch && /[0-9a-zа-яё]/i.test(ch);
-}
-
-// Проверяет один паттерн
-function matchSinglePattern(
-  text: string,
-  pattern: string,
-  matchType: Trigger["match"]
-): TriggerMatch {
-  const lowerText = text.toLowerCase();
-  const lowerPattern = pattern.toLowerCase();
-
-  switch (matchType) {
-    case "exact":
-      if (lowerText === lowerPattern) {
-        return { matched: true, quote: text };
-      }
-      return { matched: false };
-
-    case "contains": {
-      // Паттерн должен стоять в начале слова: «негра» матчится, «книга» — нет.
-      // Окончания слова после паттерна допускаем, чтобы ловить словоформы.
-      let index = lowerText.indexOf(lowerPattern);
-      while (index > 0 && isWordChar(lowerText[index - 1])) {
-        index = lowerText.indexOf(lowerPattern, index + 1);
-      }
-      if (index !== -1) {
-        const quote = text.substring(index, index + pattern.length);
-        return { matched: true, quote };
-      }
-      return { matched: false };
-    }
-
-    case "regex":
-      try {
-        const regex = new RegExp(pattern, "i");
-        const match = text.match(regex);
-        if (match) {
-          return { matched: true, quote: match[0] };
-        }
-        return { matched: false };
-      } catch {
-        console.error(`Invalid regex pattern: ${pattern}`);
-        return { matched: false };
-      }
-
-    default:
-      return { matched: false };
-  }
-}
-
-// Проверяет, совпадает ли сообщение с паттерном триггера
-function matchTrigger(text: string, trigger: Trigger): TriggerMatch {
-  // Собираем все паттерны в один массив
-  const patterns: string[] = [];
-
-  if (trigger.pattern) {
-    patterns.push(trigger.pattern);
-  }
-
-  if (trigger.patterns) {
-    patterns.push(...trigger.patterns);
-  }
-
-  // Проверяем каждый паттерн
-  for (const pattern of patterns) {
-    const result = matchSinglePattern(text, pattern, trigger.match);
-    if (result.matched) {
-      return result;
-    }
-  }
-
-  return { matched: false };
-}
-
 // Отправляет ответ на триггер
 async function sendTriggerResponse(
   ctx: Context,
   trigger: Trigger,
-  quote?: string
+  quote?: string,
 ): Promise<void> {
   const replyOptions = trigger.replyToMessage
     ? {
@@ -155,7 +74,7 @@ export function setupTriggers(bot: Bot): void {
         // Проверяем вероятность ответа
         const probability = trigger.probability ?? 1; // По умолчанию 100%
         const random = Math.random();
-        
+
         if (random <= probability) {
           await sendTriggerResponse(ctx, trigger, match.quote);
         }

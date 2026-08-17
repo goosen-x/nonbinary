@@ -1,6 +1,13 @@
 import { Bot, Context } from "grammy";
 import { Redis } from "@upstash/redis";
 import { redisConfig } from "../config/index.js";
+import {
+  WEEK_TTL_SECONDS,
+  mondayOf,
+  addDays,
+  weekKey,
+  fmtDate,
+} from "../lib/week.js";
 
 // Статистика сообщений в Upstash Redis:
 // stats:{chatId}:{понедельник недели} — hash: userId → счётчик за неделю
@@ -8,10 +15,6 @@ import { redisConfig } from "../config/index.js";
 
 const redis = redisConfig ? new Redis(redisConfig) : null;
 
-// Недели считаем по Москве (UTC+3)
-const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
-// Храним ключ недели 35 дней — хватит, чтобы показать прошлую неделю
-const WEEK_TTL_SECONDS = 35 * 24 * 60 * 60;
 const TOP_LIMIT = 10;
 
 // Отчёты: фраза-триггер → недельный счётчик с этим префиксом ключа
@@ -52,33 +55,6 @@ export async function trackWeeklyStat(
   } catch (error) {
     console.error(`Stat "${prefix}" increment error:`, error);
   }
-}
-
-// Понедельник недели, в которую попадает момент времени (по МСК)
-function mondayOf(unixSeconds: number): Date {
-  const msk = new Date(unixSeconds * 1000 + MSK_OFFSET_MS);
-  const daysSinceMonday = (msk.getUTCDay() + 6) % 7;
-  return new Date(
-    Date.UTC(
-      msk.getUTCFullYear(),
-      msk.getUTCMonth(),
-      msk.getUTCDate() - daysSinceMonday,
-    ),
-  );
-}
-
-function addDays(d: Date, days: number): Date {
-  return new Date(d.getTime() + days * 24 * 60 * 60 * 1000);
-}
-
-function weekKey(monday: Date): string {
-  return monday.toISOString().slice(0, 10);
-}
-
-function fmtDate(d: Date): string {
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${dd}.${mm}.${d.getUTCFullYear()}`;
 }
 
 export function setupStats(bot: Bot): void {
